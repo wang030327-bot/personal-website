@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --page-bg: #ddd6c8;
+  --surface-bg: #e7dfd1;
+  --surface-soft-bg: #dfd6c8;
+  --line-soft: #bfb5a7;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+* {
+  border-color: theme("colors.neutral.200");
+}
+
+body {
+  min-height: 100vh;
+  background: var(--page-bg);
+}
+
+.anchor {
+  text-decoration: none;
+}
+
+html:not(.dark) .bg-white {
+  background-color: var(--surface-bg) !important;
+}
+
+html:not(.dark) .bg-white\/85 {
+  background-color: color-mix(in srgb, var(--surface-bg) 85%, transparent) !important;
+}
+
+html:not(.dark) .bg-white\/80 {
+  background-color: color-mix(in srgb, var(--surface-bg) 80%, transparent) !important;
+}
+
+html:not(.dark) .bg-neutral-50 {
+  background-color: var(--surface-soft-bg) !important;
+}
+
+html:not(.dark) .border-neutral-200 {
+  border-color: var(--line-soft) !important;
+}

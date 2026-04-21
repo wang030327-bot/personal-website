@@ -1,0 +1,30 @@
+﻿import { MusicCard } from "@/components/music/music-card";
+import { SectionTitle } from "@/components/ui/section-title";
+import { getMusicArchive, getTodayMusic } from "@/lib/music";
+
+export default async function MusicPage() {
+  const today = await getTodayMusic();
+  const archive = (await getMusicArchive()).slice(1);
+
+  return (
+    <div className="space-y-12">
+      <section className="space-y-5">
+        <SectionTitle
+          eyebrow="Daily Pick"
+          title="今日推荐音乐"
+          description="你只需粘贴网易云链接，系统会自动解析歌名、歌手与专辑封面。"
+        />
+        {today ? <MusicCard item={today} /> : null}
+      </section>
+
+      <section className="space-y-5">
+        <SectionTitle eyebrow="Archive" title="历史推荐" description="每条推荐都可直接跳转网易云歌曲页面。" />
+        <div className="grid gap-4">
+          {archive.map((item) => (
+            <MusicCard key={item.id} item={item} compact />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
