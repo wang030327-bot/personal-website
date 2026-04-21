@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { WriterStudio } from "@/components/write/writer-studio";
 import { SectionTitle } from "@/components/ui/section-title";
 import { getCollection } from "@/lib/content";
@@ -39,7 +40,9 @@ export default function WritePage() {
         title="写作台"
         description="支持发布、修改、删除、本地图片上传和基础格式工具。"
       />
-      <WriterStudio initialEntries={entries} />
+     <Suspense fallback={<div>加载中...</div>}>
+  <WriterStudio initialEntries={entries} />
+</Suspense>
     </div>
   );
 }
