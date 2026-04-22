@@ -48,6 +48,14 @@ type UploadResult = {
   message: string;
 };
 
+function isReadonlyRuntime() {
+  return process.env.NETLIFY === "true";
+}
+
+function readonlyRuntimeMessage() {
+  return "当前为 Netlify 在线环境，文件系统只读，暂不支持直接发布/修改。请在本地写作后提交到仓库完成更新。";
+}
+
 function toSafeYamlString(value: string) {
   return JSON.stringify(value ?? "");
 }
@@ -177,6 +185,10 @@ function resolveTargetCollection(input: PublishInput, original?: WriterCollectio
 }
 
 export async function uploadImageFromWriter(formData: FormData): Promise<UploadResult> {
+  if (isReadonlyRuntime()) {
+    return { ok: false, message: readonlyRuntimeMessage() };
+  }
+
   const value = formData.get("file");
   if (!(value instanceof File)) {
     return { ok: false, message: "未检测到图片文件。" };
@@ -216,6 +228,10 @@ export async function uploadImageFromWriter(formData: FormData): Promise<UploadR
 }
 
 export async function publishFromWriter(input: PublishInput): Promise<PublishResult> {
+  if (isReadonlyRuntime()) {
+    return { ok: false, message: readonlyRuntimeMessage() };
+  }
+
   const title = input.title.trim();
   if (!title) {
     return { ok: false, message: "请先填写文章标题后再发布。" };
@@ -252,6 +268,10 @@ export async function publishFromWriter(input: PublishInput): Promise<PublishRes
 }
 
 export async function updateFromWriter(input: UpdateInput): Promise<PublishResult> {
+  if (isReadonlyRuntime()) {
+    return { ok: false, message: readonlyRuntimeMessage() };
+  }
+
   const title = input.title.trim();
   if (!title) {
     return { ok: false, message: "请先填写文章标题后再保存。" };
@@ -301,6 +321,10 @@ export async function updateFromWriter(input: UpdateInput): Promise<PublishResul
 }
 
 export async function deleteFromWriter(input: DeleteInput): Promise<DeleteResult> {
+  if (isReadonlyRuntime()) {
+    return { ok: false, message: readonlyRuntimeMessage() };
+  }
+
   const filePath = findFileBySlug(input.collection, input.slug);
   if (!filePath) {
     return { ok: false, message: "未找到要删除的文章。" };

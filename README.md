@@ -23,6 +23,21 @@ npm install
 npm run dev
 ```
 
+## Netlify 部署
+
+仓库已包含 `netlify.toml`，可直接连接 Netlify 部署。
+
+1. 在 Netlify 新建站点并连接此仓库
+2. Build command 使用 `npm run build`
+3. Node 版本使用 `20`（已在 `netlify.toml` 配置）
+4. 点击 Deploy
+
+说明：
+
+- 线上 Netlify 运行环境是只读文件系统
+- 因此写作台的“发布/修改/删除/上传图片”在线上会提示只读限制
+- 本地开发环境仍支持完整写作与发布工作流
+
 ## 目录结构
 
 ```text
