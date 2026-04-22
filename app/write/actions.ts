@@ -49,11 +49,14 @@ type UploadResult = {
 };
 
 function isReadonlyRuntime() {
-  return process.env.NETLIFY === "true";
+  if (process.env.SITE_ENABLE_RUNTIME_WRITE === "true") {
+    return false;
+  }
+  return process.env.NETLIFY === "true" || process.env.NODE_ENV === "production";
 }
 
 function readonlyRuntimeMessage() {
-  return "当前为 Netlify 在线环境，文件系统只读，暂不支持直接发布/修改。请在本地写作后提交到仓库完成更新。";
+  return "当前为 Netlify 在线环境，文件系统只读。请在本地写作后提交仓库完成更新。";
 }
 
 function toSafeYamlString(value: string) {
@@ -171,7 +174,7 @@ function makeUniqueFilePath(collection: WriterCollection, slugBase: string, igno
 }
 
 function revalidateWriterRoutes(paths: string[]) {
-  const shared = ["/", "/write", "/notes", "/friends", "/essays", "/thoughts"];
+  const shared = ["/", "/home", "/write", "/notes", "/friends", "/essays", "/thoughts", "/music"];
   for (const route of [...shared, ...paths]) {
     revalidatePath(route);
   }
@@ -189,42 +192,46 @@ export async function uploadImageFromWriter(formData: FormData): Promise<UploadR
     return { ok: false, message: readonlyRuntimeMessage() };
   }
 
-  const value = formData.get("file");
-  if (!(value instanceof File)) {
-    return { ok: false, message: "未检测到图片文件。" };
+  try {
+    const value = formData.get("file");
+    if (!(value instanceof File)) {
+      return { ok: false, message: "未检测到图片文件。" };
+    }
+
+    if (!value.type.startsWith("image/")) {
+      return { ok: false, message: "仅支持上传图片文件。" };
+    }
+
+    if (value.size > 10 * 1024 * 1024) {
+      return { ok: false, message: "图片不能超过 10MB。" };
+    }
+
+    const extByMime: Record<string, string> = {
+      "image/jpeg": ".jpg",
+      "image/png": ".png",
+      "image/webp": ".webp",
+      "image/gif": ".gif",
+      "image/avif": ".avif",
+      "image/svg+xml": ".svg"
+    };
+    const fallbackExt = path.extname(value.name).toLowerCase() || ".png";
+    const ext = extByMime[value.type] ?? fallbackExt;
+
+    const uploadDir = path.join(process.cwd(), "public", "images", "uploads");
+    fs.mkdirSync(uploadDir, { recursive: true });
+
+    const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+    const random = Math.random().toString(36).slice(2, 8);
+    const fileName = `writer-${stamp}-${random}${ext}`;
+    const filePath = path.join(uploadDir, fileName);
+    const buffer = Buffer.from(await value.arrayBuffer());
+    fs.writeFileSync(filePath, buffer);
+
+    const publicPath = `/images/uploads/${fileName}`;
+    return { ok: true, path: publicPath, message: "图片上传成功。" };
+  } catch {
+    return { ok: false, message: readonlyRuntimeMessage() };
   }
-
-  if (!value.type.startsWith("image/")) {
-    return { ok: false, message: "仅支持上传图片文件。" };
-  }
-
-  if (value.size > 10 * 1024 * 1024) {
-    return { ok: false, message: "图片不能超过 10MB。" };
-  }
-
-  const extByMime: Record<string, string> = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/webp": ".webp",
-    "image/gif": ".gif",
-    "image/avif": ".avif",
-    "image/svg+xml": ".svg"
-  };
-  const fallbackExt = path.extname(value.name).toLowerCase() || ".png";
-  const ext = extByMime[value.type] ?? fallbackExt;
-
-  const uploadDir = path.join(process.cwd(), "public", "images", "uploads");
-  fs.mkdirSync(uploadDir, { recursive: true });
-
-  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
-  const random = Math.random().toString(36).slice(2, 8);
-  const fileName = `writer-${stamp}-${random}${ext}`;
-  const filePath = path.join(uploadDir, fileName);
-  const buffer = Buffer.from(await value.arrayBuffer());
-  fs.writeFileSync(filePath, buffer);
-
-  const publicPath = `/images/uploads/${fileName}`;
-  return { ok: true, path: publicPath, message: "图片上传成功。" };
 }
 
 export async function publishFromWriter(input: PublishInput): Promise<PublishResult> {
@@ -237,34 +244,38 @@ export async function publishFromWriter(input: PublishInput): Promise<PublishRes
     return { ok: false, message: "请先填写文章标题后再发布。" };
   }
 
-  const collection = resolveTargetCollection(input);
-  const slugBase = createUrlSafeSlug(title);
-  const { slug, filePath } = makeUniqueFilePath(collection, slugBase);
-  const tags = parseTags(input.tags);
+  try {
+    const collection = resolveTargetCollection(input);
+    const slugBase = createUrlSafeSlug(title);
+    const { slug, filePath } = makeUniqueFilePath(collection, slugBase);
+    const tags = parseTags(input.tags);
 
-  const mdx = buildMdxDocument({
-    title,
-    date: input.date,
-    summary: input.summary,
-    tags,
-    genre: input.genre.trim() || "文章",
-    cover: input.cover,
-    content: input.content,
-    publishToWechat: input.publishToWechat,
-    slug
-  });
+    const mdx = buildMdxDocument({
+      title,
+      date: input.date,
+      summary: input.summary,
+      tags,
+      genre: input.genre.trim() || "文章",
+      cover: input.cover,
+      content: input.content,
+      publishToWechat: input.publishToWechat,
+      slug
+    });
 
-  fs.writeFileSync(filePath, mdx, "utf8");
+    fs.writeFileSync(filePath, mdx, "utf8");
 
-  const detailPath = toDetailPath(collection, slug);
-  revalidateWriterRoutes([detailPath]);
+    const detailPath = toDetailPath(collection, slug);
+    revalidateWriterRoutes([detailPath]);
 
-  return {
-    ok: true,
-    collection,
-    slug,
-    message: "发布成功。"
-  };
+    return {
+      ok: true,
+      collection,
+      slug,
+      message: "发布成功。"
+    };
+  } catch {
+    return { ok: false, message: readonlyRuntimeMessage() };
+  }
 }
 
 export async function updateFromWriter(input: UpdateInput): Promise<PublishResult> {
@@ -277,47 +288,51 @@ export async function updateFromWriter(input: UpdateInput): Promise<PublishResul
     return { ok: false, message: "请先填写文章标题后再保存。" };
   }
 
-  const sourcePath = findFileBySlug(input.originalCollection, input.originalSlug);
-  if (!sourcePath) {
-    return { ok: false, message: "未找到原文章文件，请刷新后重试。" };
+  try {
+    const sourcePath = findFileBySlug(input.originalCollection, input.originalSlug);
+    if (!sourcePath) {
+      return { ok: false, message: "未找到原文章文件，请刷新后重试。" };
+    }
+
+    const targetCollection = resolveTargetCollection(input, input.originalCollection);
+    const safeCurrentSlug =
+      /^[a-z0-9-]+$/i.test(input.originalSlug) && input.originalSlug.trim().length > 0
+        ? input.originalSlug.trim()
+        : createUrlSafeSlug(title);
+    const target = makeUniqueFilePath(targetCollection, safeCurrentSlug, sourcePath);
+    const tags = parseTags(input.tags);
+
+    const mdx = buildMdxDocument({
+      title,
+      date: input.date,
+      summary: input.summary,
+      tags,
+      genre: input.genre.trim() || "文章",
+      cover: input.cover,
+      content: input.content,
+      publishToWechat: input.publishToWechat,
+      slug: target.slug
+    });
+
+    fs.writeFileSync(target.filePath, mdx, "utf8");
+
+    if (sourcePath !== target.filePath && fs.existsSync(sourcePath)) {
+      fs.unlinkSync(sourcePath);
+    }
+
+    const oldPath = toDetailPath(input.originalCollection, input.originalSlug);
+    const nextPath = toDetailPath(targetCollection, target.slug);
+    revalidateWriterRoutes([oldPath, nextPath]);
+
+    return {
+      ok: true,
+      collection: targetCollection,
+      slug: target.slug,
+      message: "修改已保存。"
+    };
+  } catch {
+    return { ok: false, message: readonlyRuntimeMessage() };
   }
-
-  const targetCollection = resolveTargetCollection(input, input.originalCollection);
-  const safeCurrentSlug =
-    /^[a-z0-9-]+$/i.test(input.originalSlug) && input.originalSlug.trim().length > 0
-      ? input.originalSlug.trim()
-      : createUrlSafeSlug(title);
-  const target = makeUniqueFilePath(targetCollection, safeCurrentSlug, sourcePath);
-  const tags = parseTags(input.tags);
-
-  const mdx = buildMdxDocument({
-    title,
-    date: input.date,
-    summary: input.summary,
-    tags,
-    genre: input.genre.trim() || "文章",
-    cover: input.cover,
-    content: input.content,
-    publishToWechat: input.publishToWechat,
-    slug: target.slug
-  });
-
-  fs.writeFileSync(target.filePath, mdx, "utf8");
-
-  if (sourcePath !== target.filePath && fs.existsSync(sourcePath)) {
-    fs.unlinkSync(sourcePath);
-  }
-
-  const oldPath = toDetailPath(input.originalCollection, input.originalSlug);
-  const nextPath = toDetailPath(targetCollection, target.slug);
-  revalidateWriterRoutes([oldPath, nextPath]);
-
-  return {
-    ok: true,
-    collection: targetCollection,
-    slug: target.slug,
-    message: "修改已保存。"
-  };
 }
 
 export async function deleteFromWriter(input: DeleteInput): Promise<DeleteResult> {
@@ -325,13 +340,17 @@ export async function deleteFromWriter(input: DeleteInput): Promise<DeleteResult
     return { ok: false, message: readonlyRuntimeMessage() };
   }
 
-  const filePath = findFileBySlug(input.collection, input.slug);
-  if (!filePath) {
-    return { ok: false, message: "未找到要删除的文章。" };
+  try {
+    const filePath = findFileBySlug(input.collection, input.slug);
+    if (!filePath) {
+      return { ok: false, message: "未找到要删除的文章。" };
+    }
+
+    fs.unlinkSync(filePath);
+    revalidateWriterRoutes([toDetailPath(input.collection, input.slug)]);
+
+    return { ok: true, message: "文章已删除。" };
+  } catch {
+    return { ok: false, message: readonlyRuntimeMessage() };
   }
-
-  fs.unlinkSync(filePath);
-  revalidateWriterRoutes([toDetailPath(input.collection, input.slug)]);
-
-  return { ok: true, message: "文章已删除。" };
 }
