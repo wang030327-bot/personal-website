@@ -31,8 +31,8 @@ export function MusicRecommendForm() {
 
   return (
     <section className="space-y-3 rounded-2xl border border-ink-200/70 bg-white/80 p-4 dark:border-ink-700 dark:bg-ink-900">
-      <h3 className="text-base font-semibold">推荐音乐（管理员）</h3>
-      <p className="text-xs text-neutral-500 dark:text-neutral-400">直接粘贴网易云歌曲链接，歌名/歌手/封面会自动解析。</p>
+      <h3 className="text-base font-semibold">推荐当日音乐（管理员）</h3>
+      <p className="text-xs text-neutral-500 dark:text-neutral-400">直接粘贴网易云歌曲链接，歌名、歌手、封面会自动解析。</p>
 
       <input
         value={neteaseUrl}

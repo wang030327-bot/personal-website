@@ -63,7 +63,7 @@ function readonlyRuntimeMessage() {
 async function ensureAdminAccess() {
   const isAdmin = await isAdminAuthenticated();
   if (!isAdmin) {
-    return { ok: false, message: "仅管理员可执行写作与发布操作，请先登录写作台。" };
+    return { ok: false, message: "仅管理员可执行写作与发布操作，请先登录。" };
   }
   return { ok: true, message: "" };
 }
@@ -383,4 +383,3 @@ export async function deleteFromWriter(input: DeleteInput): Promise<DeleteResult
     return { ok: false, message: readonlyRuntimeMessage() };
   }
 }
-

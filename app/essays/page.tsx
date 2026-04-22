@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SectionTitle } from "@/components/ui/section-title";
 import { Tag } from "@/components/ui/tag";
+import { isAdminAuthenticated } from "@/lib/auth";
 import { getCollection } from "@/lib/content";
 import { formatDate } from "@/lib/utils";
 
@@ -15,10 +16,11 @@ function toHref(type: "notes" | "friends" | "essays", slug: string) {
   return `/essays/${slug}`;
 }
 
-export default function EssaysPage() {
+export default async function EssaysPage() {
+  const isAdmin = await isAdminAuthenticated();
   const essays = getCollection("essays");
   const notes = getCollection("notes");
-  const friends = getCollection("friends", { includeFriends: true });
+  const friends = getCollection("friends");
   const all = [...essays, ...notes, ...friends]
     .filter((item) => item.genre !== "今日所想")
     .sort((a, b) => +new Date(b.date) - +new Date(a.date));
@@ -30,9 +32,11 @@ export default function EssaysPage() {
         title="文章"
         description="这里展示文章、随笔、评论等写作内容。"
         actions={
-          <Link href="/write" className="text-sm text-accent-700 underline underline-offset-4 dark:text-accent-100">
-            写新文章
-          </Link>
+          isAdmin ? (
+            <Link href="/write" className="text-sm text-accent-700 underline underline-offset-4 dark:text-accent-100">
+              写新文章
+            </Link>
+          ) : undefined
         }
       />
 
@@ -56,3 +60,4 @@ export default function EssaysPage() {
     </div>
   );
 }
+

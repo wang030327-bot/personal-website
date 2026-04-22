@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SectionTitle } from "@/components/ui/section-title";
 import { Tag } from "@/components/ui/tag";
+import { isAdminAuthenticated } from "@/lib/auth";
 import { getCollection } from "@/lib/content";
 import { formatDate } from "@/lib/utils";
 
@@ -15,12 +16,11 @@ function toHref(type: "notes" | "friends" | "essays", slug: string) {
   return `/essays/${slug}`;
 }
 
-export default function ThoughtsPage() {
-  const all = [
-    ...getCollection("essays"),
-    ...getCollection("notes"),
-    ...getCollection("friends", { includeFriends: true })
-  ].sort((a, b) => +new Date(b.date) - +new Date(a.date));
+export default async function ThoughtsPage() {
+  const isAdmin = await isAdminAuthenticated();
+  const all = [...getCollection("essays"), ...getCollection("notes"), ...getCollection("friends")].sort(
+    (a, b) => +new Date(b.date) - +new Date(a.date)
+  );
   const thoughts = all.filter((item) => item.genre === "今日所想");
 
   return (
@@ -30,15 +30,17 @@ export default function ThoughtsPage() {
         title="今日所想"
         description="当天的片段想法、情绪观察与短记录。"
         actions={
-          <Link href="/write" className="text-sm text-accent-700 underline underline-offset-4 dark:text-accent-100">
-            写一条今日所想
-          </Link>
+          isAdmin ? (
+            <Link href="/write" className="text-sm text-accent-700 underline underline-offset-4 dark:text-accent-100">
+              写一条今日所想
+            </Link>
+          ) : undefined
         }
       />
 
       {thoughts.length === 0 ? (
         <div className="rounded-xl border border-ink-200/70 bg-white/80 p-6 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
-          还没有“今日所想”，去写作台选择体裁“今日所想”即可发布到这里。
+          暂无内容。
         </div>
       ) : (
         <div className="divide-y divide-ink-200/70 border-y border-ink-200/70 dark:divide-neutral-800 dark:border-neutral-800">
@@ -61,3 +63,4 @@ export default function ThoughtsPage() {
     </div>
   );
 }
+

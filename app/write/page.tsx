@@ -1,19 +1,14 @@
 import { Suspense } from "react";
-import { AdminAccessPanel } from "@/components/admin/admin-access-panel";
+import { redirect } from "next/navigation";
+
 import { WriterStudio } from "@/components/write/writer-studio";
 import { SectionTitle } from "@/components/ui/section-title";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { getCollection } from "@/lib/content";
 import type { WriterEditableEntry } from "@/types/content";
 
-function mapToEditable(
-  collection: "notes" | "friends" | "essays",
-  publishToWechat: boolean
-): WriterEditableEntry[] {
-  const options =
-    collection === "friends"
-      ? { includeDrafts: true, includeFriends: true }
-      : { includeDrafts: true };
+function mapToEditable(collection: "notes" | "friends" | "essays", publishToWechat: boolean): WriterEditableEntry[] {
+  const options = collection === "friends" ? { includeDrafts: true, includeFriends: true } : { includeDrafts: true };
   const items = getCollection(collection, options);
   return items.map((entry) => ({
     collection,
@@ -32,13 +27,7 @@ function mapToEditable(
 export default async function WritePage() {
   const isAdmin = await isAdminAuthenticated();
   if (!isAdmin) {
-    return (
-      <AdminAccessPanel
-        redirectTo="/write"
-        title="写作台仅管理员可编辑"
-        description="为了保证内容安全，只有你（管理员）可以写作、发布、修改和删除。访客只能浏览、点赞和评论。"
-      />
-    );
+    redirect("/login?next=/write");
   }
 
   const notes = mapToEditable("notes", true);
@@ -59,3 +48,4 @@ export default async function WritePage() {
     </div>
   );
 }
+

@@ -17,7 +17,7 @@ export default async function MusicPage() {
         <SectionTitle
           eyebrow="Daily Pick"
           title="今日推荐音乐"
-          description="你只需粘贴网易云链接，系统会自动解析歌名、歌手与专辑封面。"
+          description="管理员可在本页面直接粘贴网易云链接推荐当日音乐；访客可直接收听与浏览归档。"
         />
         {today ? <MusicCard item={today} /> : null}
       </section>

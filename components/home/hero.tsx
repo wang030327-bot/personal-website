@@ -1,8 +1,11 @@
 import Link from "next/link";
 
+import { isAdminAuthenticated } from "@/lib/auth";
 import { siteConfig } from "@/lib/site-config";
 
-export function Hero() {
+export async function Hero() {
+  const isAdmin = await isAdminAuthenticated();
+
   return (
     <section className="space-y-5 border-b border-ink-200/70 pb-8 dark:border-neutral-800">
       <p className="text-sm text-neutral-500 dark:text-neutral-400">Hi, I&apos;m {siteConfig.author}</p>
@@ -11,12 +14,14 @@ export function Hero() {
       <p className="text-sm italic text-neutral-500 dark:text-neutral-400">写作是整理自己的一种方式。</p>
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
-        <Link
-          href="/write"
-          className="rounded-full border border-neutral-300 px-3 py-1.5 hover:border-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-100"
-        >
-          进入写作台
-        </Link>
+        {isAdmin ? (
+          <Link
+            href="/write"
+            className="rounded-full border border-neutral-300 px-3 py-1.5 hover:border-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-100"
+          >
+            进入写作台
+          </Link>
+        ) : null}
         <Link
           href="/essays"
           className="rounded-full border border-neutral-300 px-3 py-1.5 hover:border-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-100"
@@ -39,3 +44,4 @@ export function Hero() {
     </section>
   );
 }
+

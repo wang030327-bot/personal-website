@@ -2,16 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { cookies } from "next/headers";
 
-const ADMIN_COOKIE_NAME = "writer_admin_session";
-const ADMIN_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
-
-function getAdminPassword() {
-  return process.env.SITE_ADMIN_PASSWORD ?? "wangwang";
-}
-
-function getAuthSecret() {
-  return process.env.SITE_AUTH_SECRET ?? process.env.SITE_ADMIN_PASSWORD ?? "change-this-secret";
-}
+import { ADMIN_COOKIE_MAX_AGE_SECONDS, ADMIN_COOKIE_NAME, getAdminPassword, getAuthSecret } from "@/lib/auth-shared";
 
 function sign(payload: string) {
   return createHmac("sha256", getAuthSecret()).update(payload).digest("hex");
@@ -32,7 +23,7 @@ function buildToken(expiresAt: number) {
   return `${payload}.${signature}`;
 }
 
-function verifyToken(token: string) {
+export function verifyAdminToken(token: string) {
   const [payload, signature] = token.split(".");
   if (!payload || !signature) {
     return false;
@@ -57,14 +48,14 @@ export async function isAdminAuthenticated() {
   if (!token) {
     return false;
   }
-  return verifyToken(token);
+  return verifyAdminToken(token);
 }
 
 export async function loginAsAdmin(password: string) {
   const normalizedInput = password.trim();
   const normalizedPassword = getAdminPassword().trim();
   if (!normalizedInput || !constantEqual(normalizedInput, normalizedPassword)) {
-    return { ok: false, message: "密码不正确，请重试。" };
+    return { ok: false, message: "密码错误，请重试。" };
   }
 
   const expiresAt = Date.now() + ADMIN_COOKIE_MAX_AGE_SECONDS * 1000;

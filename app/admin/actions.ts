@@ -13,6 +13,7 @@ export async function loginAdminAction(password: string): Promise<AdminActionRes
   const result = await loginAsAdmin(password);
   if (result.ok) {
     revalidatePath("/");
+    revalidatePath("/home");
     revalidatePath("/write");
     revalidatePath("/music");
   }
@@ -22,8 +23,9 @@ export async function loginAdminAction(password: string): Promise<AdminActionRes
 export async function logoutAdminAction(): Promise<AdminActionResult> {
   await logoutAdmin();
   revalidatePath("/");
+  revalidatePath("/home");
   revalidatePath("/write");
   revalidatePath("/music");
-  return { ok: true, message: "已退出管理员编辑模式。" };
+  return { ok: true, message: "已退出管理员模式。" };
 }
 

@@ -4,7 +4,7 @@ export const siteConfig = {
   author: "汪汪",
   intro: "这里是汪汪的个人写作空间，会持续更新文章、随笔、评论与今日所想。",
   nav: [
-    { href: "/", label: "首页" },
+    { href: "/home", label: "首页" },
     { href: "/music", label: "音乐" },
     { href: "/essays", label: "文章" },
     { href: "/thoughts", label: "今日所想" },
@@ -25,3 +25,4 @@ export const siteConfig = {
     ]
   }
 };
+
