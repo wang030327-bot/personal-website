@@ -4,8 +4,8 @@ import path from "node:path";
 import matter from "gray-matter";
 import getReadingTime from "reading-time";
 
-import type { CollectionType, ContentEntry, TocItem } from "@/types/content";
 import { slugify } from "@/lib/utils";
+import type { CollectionType, ContentEntry, TocItem } from "@/types/content";
 
 const contentRoot = path.join(process.cwd(), "content");
 
@@ -76,9 +76,7 @@ function parseEntry(type: CollectionType, fileName: string): ContentEntry {
     content,
     toc: extractToc(content),
     readingTime:
-      typeof data.readingTime === "string" && data.readingTime.length > 0
-        ? data.readingTime
-        : getReadingTime(content).text
+      typeof data.readingTime === "string" && data.readingTime.length > 0 ? data.readingTime : getReadingTime(content).text
   };
 }
 
@@ -120,3 +118,4 @@ export function getFeatured(type: CollectionType, limit = 3, options: Collection
     .filter((entry) => entry.featured)
     .slice(0, limit);
 }
+

@@ -9,6 +9,7 @@ import remarkGfm from "remark-gfm";
 import { ArticleHeader } from "@/components/content/article-header";
 import { EngagementPanel } from "@/components/content/engagement-panel";
 import { Prose } from "@/components/content/prose";
+import { isAdminAuthenticated } from "@/lib/auth";
 import { getContentBySlug } from "@/lib/content";
 import { mdxComponents } from "@/lib/mdx-components";
 
@@ -43,6 +44,8 @@ export default async function FriendDocDetailPage({ params }: FriendDocPageProps
     notFound();
   }
 
+  const isAdmin = await isAdminAuthenticated();
+
   return (
     <article className="mx-auto max-w-3xl space-y-8 rounded-2xl border border-ink-200/70 bg-white/80 p-6 dark:border-ink-700 dark:bg-ink-900 md:p-8">
       <ArticleHeader title={post.title} summary={post.summary} date={post.date} tags={post.tags} cover={post.cover} />
@@ -59,16 +62,19 @@ export default async function FriendDocDetailPage({ params }: FriendDocPageProps
         />
       </Prose>
 
-      <div className="border-t border-ink-200/80 pt-6 text-sm dark:border-ink-700">
-        <Link
-          href={`/write?collection=friends&slug=${encodeURIComponent(post.slug)}`}
-          className="rounded-full border border-ink-300 px-4 py-2 text-ink-700 dark:border-ink-700 dark:text-ink-200"
-        >
-          编辑本文
-        </Link>
-      </div>
+      {isAdmin ? (
+        <div className="border-t border-ink-200/80 pt-6 text-sm dark:border-ink-700">
+          <Link
+            href={`/write?collection=friends&slug=${encodeURIComponent(post.slug)}`}
+            className="rounded-full border border-ink-300 px-4 py-2 text-ink-700 dark:border-ink-700 dark:text-ink-200"
+          >
+            编辑本文
+          </Link>
+        </div>
+      ) : null}
 
       <EngagementPanel postId={`friends:${post.slug}`} />
     </article>
   );
 }
+

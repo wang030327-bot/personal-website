@@ -1,13 +1,18 @@
-﻿import { MusicCard } from "@/components/music/music-card";
+import { MusicCard } from "@/components/music/music-card";
+import { MusicRecommendForm } from "@/components/music/music-recommend-form";
 import { SectionTitle } from "@/components/ui/section-title";
+import { isAdminAuthenticated } from "@/lib/auth";
 import { getMusicArchive, getTodayMusic } from "@/lib/music";
 
 export default async function MusicPage() {
+  const isAdmin = await isAdminAuthenticated();
   const today = await getTodayMusic();
   const archive = (await getMusicArchive()).slice(1);
 
   return (
     <div className="space-y-12">
+      {isAdmin ? <MusicRecommendForm /> : null}
+
       <section className="space-y-5">
         <SectionTitle
           eyebrow="Daily Pick"
@@ -28,3 +33,4 @@ export default async function MusicPage() {
     </div>
   );
 }
+

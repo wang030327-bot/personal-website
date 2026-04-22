@@ -75,7 +75,7 @@ personal-content-site/
 ├─ content/
 │  ├─ essays/*.mdx
 │  ├─ notes/*.mdx
-│  └─ music/recommendations.ts
+│  └─ music/recommendations.json
 ├─ lib/
 │  ├─ content.ts
 │  ├─ mdx-components.tsx
@@ -113,7 +113,20 @@ personal-content-site/
 
 ### 3) 新增音乐推荐
 
-编辑 `content/music/recommendations.ts` 数组。
+编辑 `content/music/recommendations.json`，或在网站 `/music` 页面以管理员身份直接粘贴网易云链接提交。
+
+## 管理员权限
+
+- `/write` 写作台仅管理员可进入
+- 发布/修改/删除文章、上传图片、推荐音乐均需管理员登录
+- 访客仍可阅读、点赞和评论
+
+环境变量示例：
+
+```bash
+SITE_ADMIN_PASSWORD=请改成你自己的强密码
+SITE_AUTH_SECRET=请改成随机长字符串
+```
 
 ## 图片放置建议
 

@@ -6,6 +6,7 @@ import path from "node:path";
 import matter from "gray-matter";
 import { revalidatePath } from "next/cache";
 
+import { isAdminAuthenticated } from "@/lib/auth";
 import { slugify } from "@/lib/utils";
 import type { WriterCollection } from "@/types/content";
 
@@ -57,6 +58,14 @@ function isReadonlyRuntime() {
 
 function readonlyRuntimeMessage() {
   return "当前为 Netlify 在线环境，文件系统只读。请在本地写作后提交仓库完成更新。";
+}
+
+async function ensureAdminAccess() {
+  const isAdmin = await isAdminAuthenticated();
+  if (!isAdmin) {
+    return { ok: false, message: "仅管理员可执行写作与发布操作，请先登录写作台。" };
+  }
+  return { ok: true, message: "" };
 }
 
 function toSafeYamlString(value: string) {
@@ -188,6 +197,11 @@ function resolveTargetCollection(input: PublishInput, original?: WriterCollectio
 }
 
 export async function uploadImageFromWriter(formData: FormData): Promise<UploadResult> {
+  const auth = await ensureAdminAccess();
+  if (!auth.ok) {
+    return auth;
+  }
+
   if (isReadonlyRuntime()) {
     return { ok: false, message: readonlyRuntimeMessage() };
   }
@@ -235,6 +249,11 @@ export async function uploadImageFromWriter(formData: FormData): Promise<UploadR
 }
 
 export async function publishFromWriter(input: PublishInput): Promise<PublishResult> {
+  const auth = await ensureAdminAccess();
+  if (!auth.ok) {
+    return auth;
+  }
+
   if (isReadonlyRuntime()) {
     return { ok: false, message: readonlyRuntimeMessage() };
   }
@@ -279,6 +298,11 @@ export async function publishFromWriter(input: PublishInput): Promise<PublishRes
 }
 
 export async function updateFromWriter(input: UpdateInput): Promise<PublishResult> {
+  const auth = await ensureAdminAccess();
+  if (!auth.ok) {
+    return auth;
+  }
+
   if (isReadonlyRuntime()) {
     return { ok: false, message: readonlyRuntimeMessage() };
   }
@@ -336,6 +360,11 @@ export async function updateFromWriter(input: UpdateInput): Promise<PublishResul
 }
 
 export async function deleteFromWriter(input: DeleteInput): Promise<DeleteResult> {
+  const auth = await ensureAdminAccess();
+  if (!auth.ok) {
+    return auth;
+  }
+
   if (isReadonlyRuntime()) {
     return { ok: false, message: readonlyRuntimeMessage() };
   }
@@ -354,3 +383,4 @@ export async function deleteFromWriter(input: DeleteInput): Promise<DeleteResult
     return { ok: false, message: readonlyRuntimeMessage() };
   }
 }
+

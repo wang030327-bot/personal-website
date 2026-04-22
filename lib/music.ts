@@ -1,6 +1,8 @@
-﻿import { cache } from "react";
+import fs from "node:fs";
+import path from "node:path";
 
-import { musicRecommendations } from "@/content/music/recommendations";
+import { cache } from "react";
+
 import type { MusicEntry, MusicInput } from "@/types/content";
 
 const fallbackCovers = [
@@ -9,13 +11,25 @@ const fallbackCovers = [
   "/images/music/archive-2.svg"
 ];
 
+const musicDataPath = path.join(process.cwd(), "content", "music", "recommendations.json");
+
 type NeteaseMeta = {
   title: string;
   artist: string;
   cover: string;
 };
 
-function extractNeteaseSongId(url: string) {
+function fallbackRecommendations(): MusicInput[] {
+  return [
+    {
+      neteaseUrl: "https://music.163.com/song?id=2611597012",
+      isToday: true,
+      date: new Date().toISOString().slice(0, 10)
+    }
+  ];
+}
+
+export function extractNeteaseSongId(url: string) {
   const idByQuery = url.match(/[?&]id=(\d+)/)?.[1];
   if (idByQuery) {
     return idByQuery;
@@ -29,12 +43,49 @@ function extractNeteaseSongId(url: string) {
   return null;
 }
 
-function normalizeNeteaseUrl(rawUrl: string) {
+export function normalizeNeteaseUrl(rawUrl: string) {
   const songId = extractNeteaseSongId(rawUrl);
   if (!songId) {
-    return rawUrl;
+    return rawUrl.trim();
   }
   return `https://music.163.com/#/song?id=${songId}`;
+}
+
+export function readMusicRecommendations() {
+  try {
+    if (!fs.existsSync(musicDataPath)) {
+      const fallback = fallbackRecommendations();
+      fs.mkdirSync(path.dirname(musicDataPath), { recursive: true });
+      fs.writeFileSync(musicDataPath, JSON.stringify(fallback, null, 2), "utf8");
+      return fallback;
+    }
+
+    const raw = fs.readFileSync(musicDataPath, "utf8");
+    const parsed = JSON.parse(raw) as MusicInput[];
+    if (!Array.isArray(parsed)) {
+      return fallbackRecommendations();
+    }
+    return parsed.filter((item) => item && typeof item.neteaseUrl === "string");
+  } catch {
+    return fallbackRecommendations();
+  }
+}
+
+export function writeMusicRecommendations(entries: MusicInput[]) {
+  const normalized = entries.map((item) => ({
+    neteaseUrl: normalizeNeteaseUrl(item.neteaseUrl),
+    ...(item.id ? { id: item.id } : {}),
+    ...(item.title ? { title: item.title } : {}),
+    ...(item.artist ? { artist: item.artist } : {}),
+    ...(item.cover ? { cover: item.cover } : {}),
+    ...(item.recommendation ? { recommendation: item.recommendation } : {}),
+    ...(item.date ? { date: item.date } : {}),
+    ...(item.isToday ? { isToday: true } : {}),
+    ...(item.featured ? { featured: true } : {})
+  }));
+
+  fs.mkdirSync(path.dirname(musicDataPath), { recursive: true });
+  fs.writeFileSync(musicDataPath, `${JSON.stringify(normalized, null, 2)}\n`, "utf8");
 }
 
 const fetchNeteaseMeta = cache(async (songId: string): Promise<NeteaseMeta | null> => {
@@ -107,7 +158,7 @@ async function normalizeEntry(item: MusicInput, index: number): Promise<MusicEnt
 }
 
 async function normalizedRecommendations() {
-  return Promise.all(musicRecommendations.map((item, index) => normalizeEntry(item, index)));
+  return Promise.all(readMusicRecommendations().map((item, index) => normalizeEntry(item, index)));
 }
 
 export async function getMusicArchive() {
@@ -117,7 +168,8 @@ export async function getMusicArchive() {
 
 export async function getTodayMusic() {
   const normalized = await normalizedRecommendations();
-  const todayIndex = musicRecommendations.findIndex((item) => Boolean(item.isToday));
+  const source = readMusicRecommendations();
+  const todayIndex = source.findIndex((item) => Boolean(item.isToday));
 
   if (todayIndex >= 0) {
     return normalized[todayIndex] ?? null;
@@ -125,3 +177,4 @@ export async function getTodayMusic() {
 
   return normalized.sort((a, b) => +new Date(b.date) - +new Date(a.date))[0] ?? null;
 }
+

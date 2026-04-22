@@ -18,6 +18,7 @@ type EditingTarget = {
 };
 
 const genreOptions = ["文章", "随笔", "评论", "今日所想"];
+const tagSuggestions = ["理论见解", "历史思考", "方法论", "思想笔记", "阅读札记", "政治经济", "社会观察", "学术讨论"];
 
 function sortEntries(entries: WriterEditableEntry[]) {
   return [...entries].sort((a, b) => +new Date(b.date) - +new Date(a.date));
@@ -87,6 +88,19 @@ function entryKey(collection: WriterCollection, slug: string) {
 
 function normalizeDate(date: string) {
   return date.slice(0, 10);
+}
+
+function mergeTag(tagsText: string, nextTag: string) {
+  const current = tagsText
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (current.includes(nextTag)) {
+    return tagsText;
+  }
+
+  return [...current, nextTag].join(", ");
 }
 
 export function WriterStudio({ initialEntries }: WriterStudioProps) {
@@ -436,6 +450,19 @@ export function WriterStudio({ initialEntries }: WriterStudioProps) {
             onChange={(e) => setDate(e.target.value)}
             className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:focus:border-neutral-200"
           />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {tagSuggestions.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => setTags((prev) => mergeTag(prev, tag))}
+              className="rounded-full border border-neutral-300 px-2.5 py-1 text-xs hover:border-neutral-900 dark:border-neutral-700 dark:hover:border-neutral-100"
+            >
+              {tag}
+            </button>
+          ))}
         </div>
 
         <input
